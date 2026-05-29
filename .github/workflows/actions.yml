@@ -1,54 +1,21 @@
-name: CMake Release Packaging
+name: Docker Build CI
 
 on:
   push:
     branches: [ main, master ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ main, master ]
 
-permissions:
-  contents: write
-
-# ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ДЛЯ ВСЕХ ШАГОВ СБОРКИ
-env:
-  CXXFLAGS: "-Wno-error=maybe-uninitialized"
-
 jobs:
-  build_and_release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Packaging Tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y rpm dpkg-dev
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Configure CMake
-      run: cmake -H. -B_builds -DBUILD_TESTS=ON -DCPACK_GENERATOR="TGZ;DEB;RPM" -DCPACK_PACKAGE_CONTACT="sofarun313131@bmstu.ru"
-
-    - name: Build Project
-      run: cmake --build _builds
-
-    - name: Run Tests
-      run: cmake --build _builds --target test
-
-    - name: Generate Packages via CPack
-      run: |
-        cd _builds
-        cpack
-
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          _builds/*.tar.gz
-          _builds/*.deb
-          _builds/*.rpm
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build Docker Image
+      run: docker build -t logger .
