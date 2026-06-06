@@ -1,21 +1,37 @@
-name: Docker Build CI
+name: Release Artifacts CI
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    tags:
+      - 'v*' # Срабатывает при пуше тегов вроде v0.1.0, v1.0.0
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Дает право экшенам создавать релизы и загружать файлы
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+    - name: Configure CMake
+      run: cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
 
-    - name: Build Docker Image
-      run: docker build -t logger .
+    - name: Build and Pack
+      run: |
+        cmake --build _build
+        cd _build
+        cpack -G TGZ
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        files: _build/*.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

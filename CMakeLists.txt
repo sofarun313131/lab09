@@ -52,3 +52,8 @@ target_link_libraries(demo print)
 install(TARGETS demo RUNTIME DESTINATION bin)
 
 include(CPackConfig.cmake)
+
+# Настройки создания пакета (Лабораторная 9)
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_VERSION "0.1.0")
+include(CPack)
