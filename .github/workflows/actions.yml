@@ -3,13 +3,13 @@ name: Release Artifacts CI
 on:
   push:
     tags:
-      - 'v*' # Срабатывает при пуше тегов вроде v0.1.0, v1.0.0
+      - 'v*'
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Дает право экшенам создавать релизы и загружать файлы
+      contents: write
 
     steps:
     - name: Checkout repository
@@ -18,20 +18,28 @@ jobs:
     - name: Configure CMake
       run: cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
 
-    - name: Build and Pack
+    - name: Build Project
+      run: cmake --build _build
+
+    - name: Pack Artifacts via CPack
       run: |
-        cmake --build _build
         cd _build
         cpack -G TGZ
 
-    - name: Create GitHub Release
-      id: create_release
+    - name: Generate Artifact Checksum
+      run: |
+        cd _build
+        sha256sum *.tar.gz > checksums.txt
+
+    - name: Create GitHub Release and Upload Artifacts
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
-        files: _build/*.tar.gz
+        files: |
+          _build/*.tar.gz
+          _build/checksums.txt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

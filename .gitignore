@@ -3,3 +3,6 @@ artifacts/
 _builds/
 _install/
 _logs/
+artifacts/
+_build/
+_install/
